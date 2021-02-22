@@ -8,6 +8,7 @@ use crate::keyboard_controller::{ RGBL };
 use crate::animation_controller::AnimationController;
 use std::net::{TcpListener, TcpStream};
 use std::io::Read;
+use rand::Rng;
 
 pub struct CSController {
 }
@@ -95,6 +96,10 @@ impl CSController {
         let req = serde_json::from_str::<CSRequest>(&*json);
         match req {
             Ok(p) => unsafe {
+                if p.player.state.health <= 0 {
+                    animation_controller.keyboard_controller.send_rgbl(RGBL {r: 255, g: 0, b: 0, l: 3});
+                    return;
+                }
                 if p.player.state.health < LAST_PLAYER_STATE.health {
                     animation_controller.fade_out(RGBL {r: 255, g: 0, b: 0, l: 3}, 0);
                 }
@@ -122,6 +127,9 @@ impl CSController {
                 LAST_PLAYER_STATE = p.player.state;
             },
             Err(_e) => {
+                let mut rng = rand::thread_rng();
+                let r = rng.gen_range(0..105);
+                animation_controller.keyboard_controller.send_rgbl( RGBL {r: 0, g: 0, b: 150 + r, l: 3} );
                 //println!("{}\nRequest: {}", e, json.len());
                 // Request without player
             }
